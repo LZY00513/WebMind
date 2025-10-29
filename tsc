@@ -1,0 +1,24 @@
+
+vite v5.4.21 building for production...
+✓ 624 modules transformed.
+x Build failed in 576ms
+error during build:
+Invalid value for option "output.inlineDynamicImports" - multiple inputs are not supported wh
+Invalid value for option "output.inlineDynamicImports" - multiple inputs are not supported when "output.inlineDynamicImports" is true.
+    at getRollupError (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/di
+    at getRollupError (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/sha
+    at error (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at getInlineDynamicImports (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/
+    at getInlineDynamicImports (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/node-entry.js:23127:16)
+    at normalizeOutputOptions (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/r
+    at normalizeOutputOptions (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/node-entry.js:23015:34)
+    at getOutputOptions (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/
+    at getOutputOptions (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/node-entry.js:23437:12)
+    at getOutputOptionsAndPluginDriver (file:///Users/lamore/Desktop/Chrome%20Challenge/node_
+    at getOutputOptionsAndPluginDriver (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/node-entry.js:23432:19)
+    at async handleGenerateWrite (file:///Users/lamore/Desktop/Chrome%20Challenge/node_module
+    at async handleGenerateWrite (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/rollup/dist/es/shared/node-entry.js:23408:74)
+    at async build (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/vite/dist/no
+    at async build (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:65715:16)
+    at async CAC.<anonymous> (file:///Users/lamore/Desktop/Chrome%20Challenge/node_modules/vi

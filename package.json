@@ -1,0 +1,52 @@
+{
+  "name": "webmind",
+  "version": "1.0.0",
+  "description": "AI-powered note-taking and mind-mapping Chrome extension using Gemini Nano",
+  "type": "module",
+  "scripts": {
+  "dev": "vite build --watch --mode development",
+
+  "build": "npm run clean && npm run build:main && npm run build:content",
+
+  "build:main": "cross-env TARGET=main vite build",
+
+  "build:content": "cross-env TARGET=content vite build",
+
+  "clean": "rimraf dist",
+
+  "preview": "vite preview",
+
+  "type-check": "tsc --noEmit",
+  "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+}
+,
+  "dependencies": {
+    "d3": "^7.8.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.254",
+    "@types/d3": "^7.4.3",
+    "@types/node": "^24.9.1",
+    "@types/react": "^18.2.43",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "cross-env": "^10.1.0",
+    "typescript": "^5.9.3",
+    "vite": "^5.4.21"
+  },
+  "keywords": [
+    "chrome-extension",
+    "ai",
+    "gemini-nano",
+    "note-taking",
+    "mind-map",
+    "knowledge-management",
+    "react",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT"
+}

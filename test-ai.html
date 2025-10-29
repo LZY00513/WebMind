@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome AI API 测试工具</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px;
+    }
+    .test-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 12px;
+      border-left: 4px solid #667eea;
+    }
+    .test-section h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+    .status.success { background: #d4edda; color: #155724; }
+    .status.error { background: #f8d7da; color: #721c24; }
+    .status.warning { background: #fff3cd; color: #856404; }
+    .status.info { background: #d1ecf1; color: #0c5460; }
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      resize: vertical;
+      margin-bottom: 15px;
+    }
+    textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .progress {
+      width: 100%;
+      height: 8px;
+      background: #e9ecef;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s ease;
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 Chrome AI API 测试工具</h1>
+      <p>测试 Summarizer API 是否可用</p>
+    </div>
+    
+    <div class="content">
+      <!-- 测试 1: 检查 API 可用性 -->
+      <div class="test-section">
+        <h2>📊 测试 1：检查 API 可用性</h2>
+        <p>检查浏览器是否支持 Summarizer API</p>
+        <button onclick="testAvailability()">检查可用性</button>
+        <div id="availability-result" class="result" style="display:none;"></div>
+      </div>
+
+      <!-- 测试 2: 创建 Summarizer -->
+      <div class="test-section">
+        <h2>🔨 测试 2：创建 Summarizer</h2>
+        <p>尝试创建摘要生成器（需要用户激活）</p>
+        <button onclick="testCreate()">创建 Summarizer</button>
+        <div id="create-progress" class="progress" style="display:none;">
+          <div id="progress-bar" class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div id="create-result" class="result" style="display:none;"></div>
+      </div>
+
+      <!-- 测试 3: 生成摘要 -->
+      <div class="test-section">
+        <h2>✨ 测试 3：生成摘要</h2>
+        <p>输入文本并生成摘要</p>
+        <textarea id="input-text" placeholder="在此输入要总结的文本...">
+人工智能（Artificial Intelligence），英文缩写为AI。它是研究、开发用于模拟、延伸和扩展人的智能的理论、方法、技术及应用系统的一门新的技术科学。人工智能是计算机科学的一个分支，它企图了解智能的实质，并生产出一种新的能以人类智能相似的方式做出反应的智能机器，该领域的研究包括机器人、语言识别、图像识别、自然语言处理和专家系统等。人工智能从诞生以来，理论和技术日益成熟，应用领域也不断扩大，可以设想，未来人工智能带来的科技产品，将会是人类智慧的"容器"。</textarea>
+        <button onclick="testSummarize('tldr')">生成 TLDR</button>
+        <button onclick="testSummarize('key-points')">提取要点</button>
+        <button onclick="testSummarize('teaser')">生成引言</button>
+        <button onclick="testSummarize('headline')">生成标题</button>
+        <div id="summarize-result" class="result" style="display:none;"></div>
+      </div>
+
+      <!-- 测试 4: 流式摘要 -->
+      <div class="test-section">
+        <h2>🌊 测试 4：流式摘要</h2>
+        <p>实时生成摘要（流式输出）</p>
+        <button onclick="testStreaming()">开始流式摘要</button>
+        <div id="streaming-result" class="result" style="display:none;"></div>
+      </div>
+
+      <!-- 系统信息 -->
+      <div class="test-section">
+        <h2>💻 系统信息</h2>
+        <div id="system-info"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 显示系统信息
+    function showSystemInfo() {
+      const info = `
+浏览器: ${navigator.userAgent}
+Summarizer API 可用: ${'Summarizer' in self ? '✅ 是' : '❌ 否'}
+用户激活状态: ${navigator.userActivation?.isActive ? '✅ 激活' : '❌ 未激活'}
+      `.trim();
+      document.getElementById('system-info').innerHTML = `<div class="result">${info}</div>`;
+    }
+
+    // 测试 1: 检查可用性
+    async function testAvailability() {
+      const resultDiv = document.getElementById('availability-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '🔍 检查中...';
+
+      try {
+        if (!('Summarizer' in self)) {
+          resultDiv.innerHTML = `
+❌ <strong>失败</strong>
+<div class="status error">Summarizer API 不可用</div>
+<p style="margin-top:10px;">请确认：</p>
+<ul style="margin-left: 20px; margin-top: 5px;">
+  <li>使用 Chrome Canary 或 Chrome Dev</li>
+  <li>已启用必需的 flags</li>
+  <li>已重启浏览器</li>
+</ul>
+          `;
+          return;
+        }
+
+        const availability = await self.Summarizer.availability();
+        
+        let statusClass = '';
+        let statusText = '';
+        let instructions = '';
+        
+        switch(availability) {
+          case 'available':
+            statusClass = 'success';
+            statusText = '✅ 可用 - 模型已就绪';
+            instructions = '可以开始使用摘要功能！';
+            break;
+          case 'downloadable':
+            statusClass = 'warning';
+            statusText = '⬇️ 需要下载 - 模型未下载';
+            instructions = '点击"创建 Summarizer"按钮触发模型下载';
+            break;
+          case 'downloading':
+            statusClass = 'info';
+            statusText = '⏳ 下载中 - 正在下载模型';
+            instructions = '请稍候，模型下载完成后即可使用';
+            break;
+          case 'unavailable':
+            statusClass = 'error';
+            statusText = '❌ 不可用 - 设备不支持';
+            instructions = '您的设备可能不满足要求，或存储空间不足';
+            break;
+        }
+
+        resultDiv.innerHTML = `
+<strong>检查结果:</strong>
+<div class="status ${statusClass}">${statusText}</div>
+<p style="margin-top:10px;">${instructions}</p>
+<p style="margin-top:10px; font-size:12px; color:#666;">
+返回值: <code>${availability}</code>
+</p>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+❌ <strong>错误</strong>
+<div class="status error">${error.message}</div>
+<pre style="margin-top:10px; font-size:12px;">${error.stack}</pre>
+        `;
+      }
+    }
+
+    // 测试 2: 创建 Summarizer
+    let currentSummarizer = null;
+    async function testCreate() {
+      const resultDiv = document.getElementById('create-result');
+      const progressDiv = document.getElementById('create-progress');
+      const progressBar = document.getElementById('progress-bar');
+      
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '🔨 创建中...';
+
+      try {
+        if (!('Summarizer' in self)) {
+          throw new Error('Summarizer API 不可用');
+        }
+
+        if (!navigator.userActivation?.isActive) {
+          throw new Error('需要用户激活（点击按钮即可）');
+        }
+
+        progressDiv.style.display = 'block';
+        progressBar.style.width = '0%';
+
+        currentSummarizer = await self.Summarizer.create({
+          type: 'tldr',
+          format: 'plain-text',
+          length: 'medium',
+          monitor(m) {
+            m.addEventListener('downloadprogress', (e) => {
+              const percent = Math.round(e.loaded * 100);
+              progressBar.style.width = percent + '%';
+              console.log(`下载进度: ${percent}%`);
+            });
+          }
+        });
+
+        progressBar.style.width = '100%';
+        resultDiv.innerHTML = `
+✅ <strong>创建成功！</strong>
+<div class="status success">Summarizer 已就绪</div>
+<p style="margin-top:10px;">现在可以使用"测试 3"生成摘要了</p>
+        `;
+      } catch (error) {
+        progressDiv.style.display = 'none';
+        resultDiv.innerHTML = `
+❌ <strong>创建失败</strong>
+<div class="status error">${error.message}</div>
+<pre style="margin-top:10px; font-size:12px;">${error.stack}</pre>
+        `;
+      }
+    }
+
+    // 测试 3: 生成摘要
+    async function testSummarize(type) {
+      const resultDiv = document.getElementById('summarize-result');
+      const inputText = document.getElementById('input-text').value.trim();
+
+      if (!inputText) {
+        alert('请输入要总结的文本');
+        return;
+      }
+
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '🤖 生成中...';
+
+      try {
+        if (!('Summarizer' in self)) {
+          throw new Error('Summarizer API 不可用');
+        }
+
+        const summarizer = await self.Summarizer.create({
+          type: type,
+          format: 'plain-text',
+          length: 'medium'
+        });
+
+        const startTime = Date.now();
+        const summary = await summarizer.summarize(inputText, {
+          context: '这是一段需要总结的文本内容。'
+        });
+        const endTime = Date.now();
+
+        summarizer.destroy();
+
+        resultDiv.innerHTML = `
+✅ <strong>生成成功</strong> (${endTime - startTime}ms)
+<div class="status success">类型: ${type}</div>
+<p style="margin-top:15px;"><strong>摘要结果：</strong></p>
+<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:10px; border-left:4px solid #667eea;">
+${summary}
+</div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+❌ <strong>生成失败</strong>
+<div class="status error">${error.message}</div>
+<pre style="margin-top:10px; font-size:12px;">${error.stack}</pre>
+        `;
+      }
+    }
+
+    // 测试 4: 流式摘要
+    async function testStreaming() {
+      const resultDiv = document.getElementById('streaming-result');
+      const inputText = document.getElementById('input-text').value.trim();
+
+      if (!inputText) {
+        alert('请输入要总结的文本');
+        return;
+      }
+
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '🌊 流式生成中...<br><br>';
+
+      try {
+        if (!('Summarizer' in self)) {
+          throw new Error('Summarizer API 不可用');
+        }
+
+        const summarizer = await self.Summarizer.create({
+          type: 'tldr',
+          format: 'plain-text',
+          length: 'medium'
+        });
+
+        const stream = summarizer.summarizeStreaming(inputText);
+        
+        let fullSummary = '';
+        for await (const chunk of stream) {
+          fullSummary = chunk;
+          resultDiv.innerHTML = `
+🌊 <strong>流式生成中...</strong>
+<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:10px; border-left:4px solid #667eea;">
+${chunk}
+</div>
+          `;
+        }
+
+        summarizer.destroy();
+
+        resultDiv.innerHTML = `
+✅ <strong>流式生成完成</strong>
+<div class="status success">已完成</div>
+<p style="margin-top:15px;"><strong>最终摘要：</strong></p>
+<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:10px; border-left:4px solid #667eea;">
+${fullSummary}
+</div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+❌ <strong>流式生成失败</strong>
+<div class="status error">${error.message}</div>
+<pre style="margin-top:10px; font-size:12px;">${error.stack}</pre>
+        `;
+      }
+    }
+
+    // 页面加载时显示系统信息
+    window.onload = showSystemInfo;
+  </script>
+</body>
+</html>
+
