@@ -15,14 +15,13 @@ Over time, related notes are automatically linked to form a personal knowledge g
 <img width="500" height="500" alt="webmind" src="https://github.com/user-attachments/assets/fd578497-5603-4b18-aa5e-95e64e51830d" />
 
 
+
 ### *Logo*
 
 ---
-
-<img width="352" height="424" alt="截屏2025-10-29 下午5 52 23" src="https://github.com/user-attachments/assets/400a86a5-abac-47f0-8744-3e3b75c1b253" />
+<img width="556" height="850" alt="截屏2025-10-30 上午1 48 02" src="https://github.com/user-attachments/assets/07a5144a-3cc6-46fb-a52c-e0e762a2a2f8" />
 
 ### *Main Page*
-
 ---
 
 ## Key Features
@@ -110,10 +109,15 @@ npm run build     # for production build
 <img width="440" height="322" alt="截屏2025-10-29 下午5 55 26" src="https://github.com/user-attachments/assets/25ddcdfb-a333-488a-a770-de42f4eaff4e" />
 
 2. Click the popup button to summarize it.
-<img width="350" height="415" alt="截屏2025-10-29 下午5 53 58" src="https://github.com/user-attachments/assets/bf1e249e-d247-46f5-8e67-206d377483da" />
 
+<img width="281" height="475" alt="截屏2025-10-30 上午1 46 47" src="https://github.com/user-attachments/assets/d2c5970d-965c-4290-9274-e30ac4d245b6" />
+
+2.1 add tag for the note
+
+<img width="404" height="244" alt="截屏2025-10-30 上午1 58 41" src="https://github.com/user-attachments/assets/d00c272d-82b1-4c6b-85be-017bcd6647e5" />
 
 3. View and manage notes in the **side panel**.
+
 <img width="324" height="268" alt="截屏2025-10-29 下午5 57 25" src="https://github.com/user-attachments/assets/5273d302-1d6d-4534-9429-d905d5014af7" />
 
 
@@ -123,6 +127,9 @@ npm run build     # for production build
 
 <img width="357" height="410" alt="截屏2025-10-29 下午5 57 12" src="https://github.com/user-attachments/assets/c2c228dc-eac0-4717-b81c-e1e81b000dc4" />
 
+5. Check **Stats** of notes
+
+<img width="843" height="1044" alt="截屏2025-10-30 上午1 57 19" src="https://github.com/user-attachments/assets/0ca6d994-aabc-4b5d-8f20-8001bda021ad" />
 
 ---
 
