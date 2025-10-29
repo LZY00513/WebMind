@@ -34,7 +34,7 @@ export interface SummarizerOptions {
 export enum MessageType {
   COLLECT_TEXT = 'COLLECT_TEXT', // 收集文本（不总结）
   SUMMARIZE_NOTES = 'SUMMARIZE_NOTES', // 批量总结笔记
-  SAVE_NOTE = 'SAVE_NOTE',
+  SAVE_NOTE = 'SAVE_NOTE', // 保存笔记
   GET_NOTES = 'GET_NOTES',
   DELETE_NOTE = 'DELETE_NOTE',
   OPEN_SIDEPANEL = 'OPEN_SIDEPANEL',

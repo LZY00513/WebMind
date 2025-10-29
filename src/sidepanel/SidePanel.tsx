@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Note, MessageType } from '../shared/types';
 import { useStore } from '../shared/store';
 import MindMap from './MindMap';
+import Statistics from './Statistics';
 
-type ViewMode = 'notes' | 'mindmap';
+type ViewMode = 'notes' | 'mindmap' | 'statistics';
 
 const SidePanel: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('notes');
@@ -11,6 +12,11 @@ const SidePanel: React.FC = () => {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [filterTag, setFilterTag] = useState<string>('');
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [newTag, setNewTag] = useState('');
+  const [sortBy, setSortBy] = useState<'date' | 'title' | 'status'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const { notes, loading, loadNotes, removeNote } = useStore();
 
@@ -44,22 +50,47 @@ const SidePanel: React.FC = () => {
     };
   }, [loadNotes]);
 
-  // Filter notes
-  const filteredNotes = notes.filter((note) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      note.title.toLowerCase().includes(query) ||
-      (note.summary?.toLowerCase().includes(query) ?? false) ||
-      note.content.toLowerCase().includes(query)
-    );
-  });
+  // Filter and sort notes
+  const filteredAndSortedNotes = notes
+    .filter((note) => {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch = 
+        note.title.toLowerCase().includes(query) ||
+        (note.summary?.toLowerCase().includes(query) ?? false) ||
+        note.content.toLowerCase().includes(query);
+      
+      const matchesTag = !filterTag || (note.tags?.includes(filterTag) ?? false);
+      
+      return matchesSearch && matchesTag;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          comparison = a.timestamp - b.timestamp;
+          break;
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'status':
+          const statusOrder = { pending: 0, summarized: 1, connected: 2 };
+          comparison = statusOrder[a.status] - statusOrder[b.status];
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+  // Get all unique tags
+  const allTags = Array.from(new Set(notes.flatMap(note => note.tags || [])));
 
   // Group notes by status
-  const pendingNotes = filteredNotes.filter(note => note.status === 'pending');
-  const summarizedNotes = filteredNotes.filter(note => note.status === 'summarized');
-  const connectedNotes = filteredNotes.filter(note => note.status === 'connected');
+  const pendingNotes = filteredAndSortedNotes.filter(note => note.status === 'pending');
+  const summarizedNotes = filteredAndSortedNotes.filter(note => note.status === 'summarized');
+  const connectedNotes = filteredAndSortedNotes.filter(note => note.status === 'connected');
 
-  // Handle batch summarize
+  // Handle batch
   const handleBatchSummarize = async () => {
     if (selectedNotes.length === 0) return;
     
@@ -134,6 +165,88 @@ const SidePanel: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Import notes
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e: Event) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      
+      try {
+        const text = await file.text();
+        const importedNotes: Note[] = JSON.parse(text);
+        
+        // Validate imported notes
+        if (!Array.isArray(importedNotes)) {
+          throw new Error('Invalid format: Expected an array of notes');
+        }
+        
+        // Import notes by sending to background
+        for (const note of importedNotes) {
+          await chrome.runtime.sendMessage({
+            type: MessageType.SAVE_NOTE,
+            payload: note,
+          });
+        }
+        
+        loadNotes();
+        alert(`Successfully imported ${importedNotes.length} notes!`);
+      } catch (error) {
+        console.error('Failed to import notes:', error);
+        alert('Failed to import notes. Please check the file format.');
+      }
+    };
+    input.click();
+  };
+
+  // Add tag to note
+  const handleAddTag = async (noteId: string, tag: string) => {
+    if (!tag.trim()) return;
+    
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    
+    const updatedTags = note.tags ? [...note.tags, tag.trim()] : [tag.trim()];
+    
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageType.UPDATE_NOTE,
+        payload: { 
+          id: noteId, 
+          updates: { tags: updatedTags } 
+        },
+      });
+      loadNotes();
+      setNewTag('');
+      setEditingNoteId(null);
+    } catch (error) {
+      console.error('Failed to add tag:', error);
+    }
+  };
+
+  // Remove tag from note
+  const handleRemoveTag = async (noteId: string, tagToRemove: string) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note || !note.tags) return;
+    
+    const updatedTags = note.tags.filter(t => t !== tagToRemove);
+    
+    try {
+      await chrome.runtime.sendMessage({
+        type: MessageType.UPDATE_NOTE,
+        payload: { 
+          id: noteId, 
+          updates: { tags: updatedTags } 
+        },
+      });
+      loadNotes();
+    } catch (error) {
+      console.error('Failed to remove tag:', error);
+    }
+  };
+
   return (
     <div className="sidepanel-container">
       {/* Header */}
@@ -156,31 +269,58 @@ const SidePanel: React.FC = () => {
             </svg>
             <h1>WebMind</h1>
           </div>
-          <button className="export-btn" onClick={handleExport} title="Export Notes">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M7 10L12 15L17 10"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M12 15V3"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          <div className="header-actions">
+            <button className="export-btn" onClick={handleImport} title="Import Notes">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M17 8L12 3L7 8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 3V15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <button className="export-btn" onClick={handleExport} title="Export Notes">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M7 10L12 15L17 10"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M12 15V3"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* View Mode Tabs */}
@@ -218,36 +358,97 @@ const SidePanel: React.FC = () => {
             </svg>
             Mind Map
           </button>
+          <button
+            className={`tab ${viewMode === 'statistics' ? 'active' : ''}`}
+            onClick={() => setViewMode('statistics')}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M12 20V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M18 20V4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path d="M6 20V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            Stats
+          </button>
         </div>
 
         {/* Search Bar (only in notes view) */}
         {viewMode === 'notes' && (
-          <div className="search-bar">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <circle
-                cx="11"
-                cy="11"
-                r="8"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <>
+            <div className="search-bar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="8"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M21 21L16.65 16.65"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <path
-                d="M21 21L16.65 16.65"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search notes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+            </div>
+            
+            {/* Tag Filter */}
+            {allTags.length > 0 && (
+              <div className="tag-filter">
+                <button
+                  className={`filter-tag ${!filterTag ? 'active' : ''}`}
+                  onClick={() => setFilterTag('')}
+                >
+                  All
+                </button>
+                {allTags.map(tag => (
+                  <button
+                    key={tag}
+                    className={`filter-tag ${filterTag === tag ? 'active' : ''}`}
+                    onClick={() => setFilterTag(tag)}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {/* Sort Controls */}
+            <div className="sort-controls">
+              <span className="sort-label">Sort by:</span>
+              <select 
+                value={sortBy} 
+                onChange={(e) => setSortBy(e.target.value as 'date' | 'title' | 'status')}
+                className="sort-select"
+              >
+                <option value="date">Date</option>
+                <option value="title">Title</option>
+                <option value="status">Status</option>
+              </select>
+              <button 
+                className="sort-order-btn"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  {sortOrder === 'asc' ? (
+                    <path d="M7 14L12 9L17 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  ) : (
+                    <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  )}
+                </svg>
+              </button>
+            </div>
+          </>
         )}
       </div>
 
@@ -260,7 +461,7 @@ const SidePanel: React.FC = () => {
           </div>
         ) : viewMode === 'notes' ? (
           <div className="notes-view">
-            {filteredNotes.length === 0 ? (
+            {filteredAndSortedNotes.length === 0 ? (
               <div className="empty-state">
                 <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
                   <path
@@ -347,6 +548,61 @@ const SidePanel: React.FC = () => {
                             </div>
                           </div>
                           <p className="note-card-content">{note.content.slice(0, 200)}...</p>
+                          
+                          {/* Tags Section */}
+                          <div className="note-tags">
+                            {note.tags?.map(tag => (
+                              <span key={tag} className="tag">
+                                #{tag}
+                                <button
+                                  className="tag-remove"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTag(note.id, tag);
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                            {editingNoteId === note.id ? (
+                              <div className="tag-input-container" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="text"
+                                  className="tag-input"
+                                  placeholder="Add tag..."
+                                  value={newTag}
+                                  onChange={(e) => setNewTag(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleAddTag(note.id, newTag);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingNoteId(null);
+                                      setNewTag('');
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  className="tag-add-btn"
+                                  onClick={() => handleAddTag(note.id, newTag)}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="tag-add-icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingNoteId(note.id);
+                                }}
+                              >
+                                + Tag
+                              </button>
+                            )}
+                          </div>
+                          
                           <div className="note-card-footer">
                             <span className="note-date">
                               {new Date(note.timestamp).toLocaleDateString('en-US', {
@@ -416,6 +672,61 @@ const SidePanel: React.FC = () => {
                             </div>
                           </div>
                           <p className="note-card-summary">{note.summary}</p>
+                          
+                          {/* Tags Section */}
+                          <div className="note-tags">
+                            {note.tags?.map(tag => (
+                              <span key={tag} className="tag">
+                                #{tag}
+                                <button
+                                  className="tag-remove"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTag(note.id, tag);
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                            {editingNoteId === note.id ? (
+                              <div className="tag-input-container" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="text"
+                                  className="tag-input"
+                                  placeholder="Add tag..."
+                                  value={newTag}
+                                  onChange={(e) => setNewTag(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleAddTag(note.id, newTag);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingNoteId(null);
+                                      setNewTag('');
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  className="tag-add-btn"
+                                  onClick={() => handleAddTag(note.id, newTag)}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="tag-add-icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingNoteId(note.id);
+                                }}
+                              >
+                                + Tag
+                              </button>
+                            )}
+                          </div>
+                          
                           <div className="note-card-footer">
                             <span className="note-date">
                               {new Date(note.timestamp).toLocaleDateString('en-US', {
@@ -485,6 +796,61 @@ const SidePanel: React.FC = () => {
                             </div>
                           </div>
                           <p className="note-card-summary">{note.summary}</p>
+                          
+                          {/* Tags Section */}
+                          <div className="note-tags">
+                            {note.tags?.map(tag => (
+                              <span key={tag} className="tag">
+                                #{tag}
+                                <button
+                                  className="tag-remove"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveTag(note.id, tag);
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                            {editingNoteId === note.id ? (
+                              <div className="tag-input-container" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="text"
+                                  className="tag-input"
+                                  placeholder="Add tag..."
+                                  value={newTag}
+                                  onChange={(e) => setNewTag(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleAddTag(note.id, newTag);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingNoteId(null);
+                                      setNewTag('');
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <button
+                                  className="tag-add-btn"
+                                  onClick={() => handleAddTag(note.id, newTag)}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="tag-add-icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingNoteId(note.id);
+                                }}
+                              >
+                                + Tag
+                              </button>
+                            )}
+                          </div>
+                          
                           <div className="note-card-footer">
                             <span className="note-date">
                               {new Date(note.timestamp).toLocaleDateString('en-US', {
@@ -564,7 +930,7 @@ const SidePanel: React.FC = () => {
               </div>
             )}
           </div>
-        ) : (
+        ) : viewMode === 'mindmap' ? (
           <div className="mindmap-view">
             <MindMap 
               notes={notes}
@@ -614,6 +980,10 @@ const SidePanel: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        ) : (
+          <div className="statistics-view">
+            <Statistics notes={notes} />
           </div>
         )}
       </div>

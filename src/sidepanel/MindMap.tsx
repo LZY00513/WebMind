@@ -28,6 +28,7 @@ const MindMap: React.FC<MindMapProps> = ({ notes, onNoteClick }) => {
   const hierarchyRootRef = useRef<any>(null);
   const [mindmapData, setMindmapData] = useState<any>(null);
   const hasRenderedRef = useRef(false);
+  const [showTip, setShowTip] = useState(true);
 
   // 监听视图变化，重置渲染标记
   useEffect(() => {
@@ -362,19 +363,28 @@ const MindMap: React.FC<MindMapProps> = ({ notes, onNoteClick }) => {
         </div>
       ) : (
         <>
-          <div className="mindmap-info">
-            <p>💡 Click nodes to expand/collapse, scroll to zoom for details</p>
-            {aiStatus && (
-              <p className="ai-status-badge">
-                {aiStatus}
-              </p>
-            )}
-            {isBuilding && (
-              <p className="building-badge">
-                🤖 Building mind map with AI...
-              </p>
-            )}
-          </div>
+          {showTip && (
+            <div className="mindmap-tip">
+              <span>💡 Click nodes to expand/collapse</span>
+              <button 
+                className="tip-close"
+                onClick={() => setShowTip(false)}
+                title="Close tip"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          {aiStatus && (
+            <div className="ai-status-indicator">
+              {aiStatus}
+            </div>
+          )}
+          {isBuilding && (
+            <div className="building-indicator">
+              🤖 Building...
+            </div>
+          )}
           <svg ref={svgRef} className="mindmap-svg"></svg>
         </>
       )}

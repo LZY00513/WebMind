@@ -46,6 +46,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       return true;
 
+    case MessageType.SAVE_NOTE:
+      saveNote(message.payload)
+        .then(() => sendResponse({ success: true }))
+        .catch((error) => sendResponse({ error: error.message }));
+      return true;
+
     case MessageType.GET_NOTES:
       getAllNotes()
         .then((notes) => sendResponse({ notes }))
@@ -59,7 +65,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case MessageType.UPDATE_NOTE:
-      updateNote(message.payload.note)
+      handleUpdateNote(message.payload.id, message.payload.updates)
         .then(() => sendResponse({ success: true }))
         .catch((error) => sendResponse({ error: error.message }));
       return true;
@@ -164,6 +170,21 @@ async function updateNote(note: Note): Promise<void> {
   }
 
   notes[index] = note;
+  await chrome.storage.local.set({ webmind_notes: notes });
+}
+
+/**
+ * 更新笔记部分字段
+ */
+async function handleUpdateNote(noteId: string, updates: Partial<Note>): Promise<void> {
+  const notes = await getAllNotes();
+  const index = notes.findIndex(n => n.id === noteId);
+  
+  if (index === -1) {
+    throw new Error('笔记不存在');
+  }
+
+  notes[index] = { ...notes[index], ...updates };
   await chrome.storage.local.set({ webmind_notes: notes });
 }
 
