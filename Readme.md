@@ -8,20 +8,17 @@ Using **Chrome’s Built-in AI (Summary API)**, it instantly summarizes highligh
 ---
 
 ## Overview
-
+### *Logo*
 WebMind integrates directly into Chrome, letting you highlight any passage, summarize it locally through built-in AI, and store the results in a privacy-safe note system.
 Over time, related notes are automatically linked to form a personal knowledge graph inside the browser.
 
 <img width="500" height="500" alt="webmind" src="https://github.com/user-attachments/assets/fd578497-5603-4b18-aa5e-95e64e51830d" />
 
-
-
-### *Logo*
-
 ---
+### *Main Page*
 <img width="556" height="850" alt="截屏2025-10-30 上午1 48 02" src="https://github.com/user-attachments/assets/07a5144a-3cc6-46fb-a52c-e0e762a2a2f8" />
 
-### *Main Page*
+
 ---
 
 ## Key Features
@@ -129,7 +126,7 @@ npm run build     # for production build
 
 5. Check **Stats** of notes
 
-<img width="843" height="1044" alt="截屏2025-10-30 上午1 57 19" src="https://github.com/user-attachments/assets/0ca6d994-aabc-4b5d-8f20-8001bda021ad" />
+<img width="422" height="522" alt="截屏2025-10-30 上午1 57 19" src="https://github.com/user-attachments/assets/0ca6d994-aabc-4b5d-8f20-8001bda021ad" />
 
 ---
 
