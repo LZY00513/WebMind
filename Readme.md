@@ -1,3 +1,6 @@
+## Demo
+
+▶️ Watch demo video: https://youtu.be/u_H_wjMT97E
 
 
 # WebMind – AI-Powered Notes and Mind Map Assistant
